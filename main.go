@@ -5,7 +5,7 @@ import (
 	"context"
 	"easyman/pb/webbff"
 	"github.com/dan-and-dna/gin-grpc"
-	"github.com/dan-and-dna/gin-grpc-network"
+	gingrpcnetwork "github.com/dan-and-dna/gin-grpc-network"
 	"github.com/dan-and-dna/gin-grpc-network/core"
 	mgrpc "github.com/dan-and-dna/gin-grpc-network/modules/grpc"
 	mhttp "github.com/dan-and-dna/gin-grpc-network/modules/http"
@@ -37,7 +37,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
+	//grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
 }
 
 type ZapOption struct {
@@ -97,9 +97,10 @@ func setGrpc() {
 
 func setupHandlers() {
 	// grpc 以pkg service method来区别请求
-	network.HandleProto("webbff", "webbff", "login", &webbff.WebBFF_ServiceDesc, gingrpc.Handler{
+	network.HandleProto("webbff", "WebBFF", "Login", &webbff.WebBFF_ServiceDesc, gingrpc.Handler{
 		Proto: &webbff.LoginReq{},
 		HandleProto: func(ctx context.Context, req interface{}) (interface{}, error) {
+
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
 
@@ -125,7 +126,6 @@ func setupHandlers() {
 			return &webbff.LoginResp{Token: "xxxxxxxx"}, nil
 		},
 	})
-
 }
 
 func setupGrpcClient() {

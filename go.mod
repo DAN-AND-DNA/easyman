@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/dan-and-dna/gin-grpc v0.0.0-20221109164324-7d4ba9c7345b
-	github.com/dan-and-dna/gin-grpc-network v0.0.0-20221112103114-7a218f3c6744
+	github.com/dan-and-dna/gin-grpc-network v0.0.0-20221116083701-6f05a974dedc
 	github.com/gin-gonic/gin v1.8.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	go.uber.org/zap v1.23.0
