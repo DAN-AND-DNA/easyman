@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"easyman/pb/userservice"
 	"easyman/pb/webbff"
 	"github.com/dan-and-dna/gin-grpc"
 	gingrpcnetwork "github.com/dan-and-dna/gin-grpc-network"
@@ -37,7 +38,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	//grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
 }
 
 type ZapOption struct {
@@ -78,8 +78,9 @@ func setHttp() {
 }
 
 func setGrpc() {
+	grpc_zap.ReplaceGrpcLoggerV2(zapLogger)
 	moduleCore := mgrpc.ModuleLock()
-	defer mgrpc.ModuleUnlock()
+	defer mgrpc.ModuleUnlockRestart()
 
 	grpcCore := moduleCore.(*core.GrpcCore)
 
@@ -90,6 +91,11 @@ func setGrpc() {
 	grpcCore.Middlewares = append(grpcCore.Middlewares,
 		grpc_ctxtags.UnaryServerInterceptor(),
 		grpc_zap.UnaryServerInterceptor(zapLogger, grpc_zap.WithDurationField(grpc_zap.DefaultDurationToField)),
+	)
+
+	grpcCore.MiddlewaresStream = append(grpcCore.MiddlewaresStream,
+		grpc_ctxtags.StreamServerInterceptor(),
+		grpc_zap.StreamServerInterceptor(zapLogger, grpc_zap.WithDurationField(grpc_zap.DefaultDurationToField)),
 	)
 
 	setupGrpcClient()
@@ -126,9 +132,31 @@ func setupHandlers() {
 			return &webbff.LoginResp{Token: "xxxxxxxx"}, nil
 		},
 	})
+
+	network.ListenProto("userservice", "UserService", "LoginGame", &userservice.UserService_ServiceDesc, func(ss grpc.ServerStream) error {
+		req := &userservice.LoginGameReq{}
+		err := ss.RecvMsg(req)
+		if err != nil {
+			return err
+		}
+		l := ctxzap.Extract(ss.Context())
+		l.Info("user try to loginGame: ", zap.String("name", req.GetUsername()))
+
+		ss.SendMsg(&userservice.LoginGameResp{
+			Token: "1234",
+		})
+		ss.SendMsg(&userservice.LoginGameResp{
+			Token: "12345",
+		})
+		ss.SendMsg(&userservice.LoginGameResp{
+			Token: "12346",
+		})
+		return nil
+	})
 }
 
 func setupGrpcClient() {
+
 	go func() {
 		serviceConn, err := grpc.Dial("127.0.0.1:3730", grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
@@ -145,6 +173,39 @@ func setupGrpcClient() {
 			})
 			if err != nil {
 				panic(err)
+			}
+		}
+	}()
+
+	go func() {
+		serviceConn, err := grpc.Dial("127.0.0.1:3730", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("[webbff] connect to UserService failed: %s\n", err.Error())
+		}
+
+		serviceClient := userservice.NewUserServiceClient(serviceConn)
+
+		for {
+			time.Sleep(3 * time.Second)
+			ss, err := serviceClient.LoginGame(context.TODO())
+			if err != nil {
+				panic(err)
+			}
+
+			err = ss.SendMsg(&userservice.LoginGameReq{Username: "DDDD"})
+			if err != nil {
+				panic(err)
+			}
+
+			for {
+				resp := &userservice.LoginGameResp{}
+				err := ss.RecvMsg(resp)
+				if err != nil && err == io.EOF {
+					break
+				} else if err != nil {
+					panic(err)
+				}
+				log.Println(resp.GetToken())
 			}
 		}
 	}()

@@ -2,7 +2,7 @@ syntax = "proto3";
 package kvservice;
 
 
-option go_package = "nanogo/examples/kvstore/pb/kvservice";
+option go_package = "singleinst/examples/kvstore/pb/kvservice";
 
 message KeyValue {
     string key = 1;

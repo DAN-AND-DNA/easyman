@@ -4,7 +4,7 @@ package webbff;
 import "pb/proto/userservice.proto";
 import "pb/proto/kvservice.proto";
 
-option go_package = "nanogo/examples/kvstore/pb/webbff";
+option go_package = "singleinst/examples/kvstore/pb/webbff";
 
 
 message LoginReq {

@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type UserServiceClient interface {
 	Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error)
 	IsAuthorized(ctx context.Context, in *IsAuthorizedReq, opts ...grpc.CallOption) (*IsAuthorizedResp, error)
+	LoginGame(ctx context.Context, opts ...grpc.CallOption) (UserService_LoginGameClient, error)
 }
 
 type userServiceClient struct {
@@ -52,12 +53,44 @@ func (c *userServiceClient) IsAuthorized(ctx context.Context, in *IsAuthorizedRe
 	return out, nil
 }
 
+func (c *userServiceClient) LoginGame(ctx context.Context, opts ...grpc.CallOption) (UserService_LoginGameClient, error) {
+	stream, err := c.cc.NewStream(ctx, &UserService_ServiceDesc.Streams[0], "/userservice.UserService/LoginGame", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &userServiceLoginGameClient{stream}
+	return x, nil
+}
+
+type UserService_LoginGameClient interface {
+	Send(*LoginGameReq) error
+	Recv() (*LoginGameResp, error)
+	grpc.ClientStream
+}
+
+type userServiceLoginGameClient struct {
+	grpc.ClientStream
+}
+
+func (x *userServiceLoginGameClient) Send(m *LoginGameReq) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *userServiceLoginGameClient) Recv() (*LoginGameResp, error) {
+	m := new(LoginGameResp)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility
 type UserServiceServer interface {
 	Login(context.Context, *LoginReq) (*LoginResp, error)
 	IsAuthorized(context.Context, *IsAuthorizedReq) (*IsAuthorizedResp, error)
+	LoginGame(UserService_LoginGameServer) error
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -70,6 +103,9 @@ func (UnimplementedUserServiceServer) Login(context.Context, *LoginReq) (*LoginR
 }
 func (UnimplementedUserServiceServer) IsAuthorized(context.Context, *IsAuthorizedReq) (*IsAuthorizedResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsAuthorized not implemented")
+}
+func (UnimplementedUserServiceServer) LoginGame(UserService_LoginGameServer) error {
+	return status.Errorf(codes.Unimplemented, "method LoginGame not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 
@@ -120,6 +156,32 @@ func _UserService_IsAuthorized_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_LoginGame_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(UserServiceServer).LoginGame(&userServiceLoginGameServer{stream})
+}
+
+type UserService_LoginGameServer interface {
+	Send(*LoginGameResp) error
+	Recv() (*LoginGameReq, error)
+	grpc.ServerStream
+}
+
+type userServiceLoginGameServer struct {
+	grpc.ServerStream
+}
+
+func (x *userServiceLoginGameServer) Send(m *LoginGameResp) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *userServiceLoginGameServer) Recv() (*LoginGameReq, error) {
+	m := new(LoginGameReq)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -136,6 +198,13 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_IsAuthorized_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "LoginGame",
+			Handler:       _UserService_LoginGame_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "pb/proto/userservice.proto",
 }

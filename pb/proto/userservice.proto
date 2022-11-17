@@ -1,7 +1,7 @@
 syntax = "proto3";
 package userservice;
 
-option go_package = "nanogo/examples/kvstore/pb/userservice";
+option go_package = "singleinst/examples/kvstore/pb/userservice";
 
 // 授权信息
 message AuthInfo {
@@ -39,7 +39,17 @@ message IsAuthorizedResp {
     bool is_authorized = 1;
 }
 
+message LoginGameReq {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginGameResp {
+  string Token = 1;
+}
+
 service UserService {
     rpc Login(LoginReq) returns (LoginResp) {}
     rpc IsAuthorized(IsAuthorizedReq) returns (IsAuthorizedResp) {}
+    rpc LoginGame(stream LoginGameReq) returns (stream LoginGameResp) {}
 }

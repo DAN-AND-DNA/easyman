@@ -23,9 +23,7 @@ func setup() {
 func BenchmarkGrpc(b *testing.B) {
 	setup()
 	moduleCore := grpc.ModuleLock()
-
 	grpcCore := moduleCore.(*core.GrpcCore)
-	grpcCore.Enable = true
 	grpcCore.Middlewares = nil
-	grpc.ModuleBenchmark(b, "/webbff.WebBFF/Login", &webbff.LoginReq{}, &webbff.LoginResp{})
+	grpc.ModuleUnlockBenchmark(b, "/webbff.WebBFF/Login", &webbff.LoginReq{}, &webbff.LoginResp{})
 }
